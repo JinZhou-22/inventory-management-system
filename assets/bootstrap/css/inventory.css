@@ -114,7 +114,7 @@
 	 background-image: none !important;
  }
 
- .menu_select_hover {
-  color: rgba(255,255,255,0.5) !important;
+.menu_select_hover {
+  color: #ffffff !important;
   transition: 0.3s;
- }
+}

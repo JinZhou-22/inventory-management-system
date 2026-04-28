@@ -2,7 +2,8 @@
 This repository contains the source code for a web-based inventory management system with CRUD functionality. The theme of the web app follows the famous clothing brand, named 'UNIQLO'. This project was created for one of my internship interview's technical assessment.
 
 A live demo version can be accessed through the following link:<br />
-~~https://gray-flower-0ce0a4e10.5.azurestaticapps.net/~~ <sub>The website is currently offline.</sub>
+~~https://gray-flower-0ce0a4e10.5.azurestaticapps.net/~~ <sub>~~The website is currently offline.~~</sub> <br />
+~~https://inventory-management-system-nine-rho.vercel.app/ <sub>The website is Group24's deployment.</sub>
 
 ## JavaScript Libraries/Frameworks
 - Bootstrap 5

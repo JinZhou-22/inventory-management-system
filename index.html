@@ -21,17 +21,14 @@
 	<script src="assets/js/jquery.min.js"></script>
 	<script src="assets/js/datatables.min.js"></script>
 	<script type="text/javascript">
-		$(document).ready( function () {
+		$(document).ready(function () {
+
 			var dataSrc = "";
-		
-			var datatable = $('#myTable').DataTable( {
-				data : dataSrc,
+
+			var datatable = $('#myTable').DataTable({
+				data: dataSrc,
 				columns: [
-					null,
-					null,
-					null,
-					null,
-					null,
+					null, null, null, null, null,
 					{
 						data: null,
 						className: "dt-center editor-edit",
@@ -45,76 +42,61 @@
 						orderable: false
 					}
 				],
-				"scrollY": "65vh",
-				"scrollCollapse": true,
-				"paging": false,
-				"info": false,
-				"buttons": true,
-				language: { 
+				scrollY: "65vh",
+				scrollCollapse: true,
+				paging: false,
+				info: false,
+				buttons: true,
+				language: {
 					search: "",
 					searchPlaceholder: '🔍︎    Search inventory',
-					"emptyTable":     "Please select 'LOAD DATA' to load an existing database file or 'NEW DATA' to create a new one."
+					emptyTable: "Please select 'LOAD DATA' or 'NEW DATA'."
 				},
-				"dom": '<"pull-left"f><"pull-right"B>tip',
+				dom: '<"pull-left"f><"pull-right"B>tip',
 				buttons: [
 					{
 						text: 'ADD NEW ITEM',
-						action: function ( e, dt, node, config ) {
+						action: function () {
 							$('#addModal').modal('toggle');
 						}
 					},
 					{
 						text: 'SAVE DATA',
-						action: function ( e, dt, button, config ) {
+						action: function (e, dt) {
 							var data = dt.buttons.exportData();
-		 
 							$.fn.dataTable.fileSave(
-								new Blob( [ JSON.stringify( data ) ] ),
-								'DB.txt'
+									new Blob([JSON.stringify(data)]),
+									'DB.txt'
 							);
 						}
 					},
 					{
 						text: 'NEW DATA',
-						action: function ( e, dt, node, config ) {
+						action: function () {
 							$('#addModal').modal('toggle');
 						}
 					},
-					{
-						text: 'LOAD DATA'
-					}
+					{ text: 'LOAD DATA' }
 				]
-			} );
-			
+			});
+
 			var a = null;
 			var b = null;
-			
-			function delete_Row(a){
-				datatable.row( $(a).parents('tr') ).remove().draw();
-				if (datatable.rows().count() == 0){
-					for(var i=0; i<buttonShow.length; i++){
-						if(buttonShow[i].innerHTML == '<span>ADD NEW ITEM</span>'){
-							 buttonShow[i].hidden = true;
-						} else if (buttonShow[i].innerHTML == '<span>SAVE DATA</span>'){
-							 buttonShow[i].hidden = true;
-						} else if (buttonShow[i].innerHTML == '<span>LOAD DATA</span>'){
-							 buttonShow[i].hidden = false;
-						} else if (buttonShow[i].innerHTML == '<span>NEW DATA</span>'){
-							 buttonShow[i].hidden = false;
-						}
-					}
-					$('#empty_animation').attr("hidden",false);
-				}
-			};
-			
+
+			function delete_Row(a) {
+				datatable.row($(a).parents('tr')).remove().draw();
+			}
+
+			// DELETE
 			$('#myTable').on('click', 'td.editor-delete', function () {
 				a = this;
 				$('#deleteModal').modal('toggle');
-				$('#deleteModal').on('click', '#delete_button', function () {
+				$('#delete_button').off('click').on('click', function () {
 					delete_Row(a);
-				} );
-			} );
+				});
+			});
 
+// EDIT CLICK
 			$('#myTable').on('click', 'td.editor-edit', function () {
 				b = this;
 				var data = datatable.row(b).data();
@@ -128,15 +110,18 @@
 				$('#editModal').modal('toggle');
 			});
 
+// EDIT SUBMIT
 			$('#edit_data').on('submit', function (event) {
 				event.preventDefault();
 
-				var quantity = parseFloat($('#edit_quantity').val().replace(/[^0-9.]/g,'')) || 0;
-				var unit = parseFloat($('#edit_unit_price').val().replace(/[^0-9.]/g,'')) || 0;
+				var quantity = parseFloat($('#edit_quantity').val().replace(/[^0-9.]/g, '')) || 0;
+				var unit = parseFloat($('#edit_unit_price').val().replace(/[^0-9.]/g, '')) || 0;
 
 				$('#edit_quantity').val(quantity.toFixed(0));
 				$('#edit_unit_price').val('RM ' + unit.toFixed(2));
-				$('#edit_total_price').val('RM ' + (quantity * unit).toFixed(2));
+
+				var total = quantity * unit;
+				$('#edit_total_price').val('RM ' + total.toFixed(2));
 
 				var newData = [
 					$('#edit_itemname').val(),
@@ -152,15 +137,18 @@
 				$('#updateConfirmationModal').modal('toggle');
 			});
 
+// ADD SUBMIT
 			$('#add_data').on('submit', function (event) {
 				event.preventDefault();
 
-				var quantity = parseFloat($('#add_quantity').val().replace(/[^0-9.]/g,'')) || 0;
-				var unit = parseFloat($('#add_unit_price').val().replace(/[^0-9.]/g,'')) || 0;
+				var quantity = parseFloat($('#add_quantity').val().replace(/[^0-9.]/g, '')) || 0;
+				var unit = parseFloat($('#add_unit_price').val().replace(/[^0-9.]/g, '')) || 0;
 
 				$('#add_quantity').val(quantity.toFixed(0));
 				$('#add_unit_price').val('RM ' + unit.toFixed(2));
-				$('#add_total_price').val('RM ' + (quantity * unit).toFixed(2));
+
+				var total = quantity * unit;
+				$('#add_total_price').val('RM ' + total.toFixed(2));
 
 				var newData = [
 					$('#add_itemname').val(),
@@ -175,6 +163,7 @@
 				$('#addModal').modal('toggle');
 				$('#addConfirmationModal').modal('toggle');
 
+				// 清空
 				$('#add_itemname').val('');
 				$('#add_quantity').val('');
 				$('#add_type').val('');
@@ -182,83 +171,21 @@
 				$('#add_total_price').val('');
 			});
 
+// 自动计算（EDIT）
 			$('#edit_quantity, #edit_unit_price').on('keyup', function () {
-				var q = parseFloat($('#edit_quantity').val()) || 0;
-				var u = parseFloat($('#edit_unit_price').val().replace(/[^0-9.]/g,'')) || 0;
-				$('#edit_total_price').val('RM ' + (q * u).toFixed(2));
+				var quantity = parseFloat($('#edit_quantity').val()) || 0;
+				var unit = parseFloat($('#edit_unit_price').val().replace(/[^0-9.]/g, '')) || 0;
+				$('#edit_total_price').val('RM ' + (quantity * unit).toFixed(2));
 			});
 
+// 自动计算（ADD）
 			$('#add_quantity, #add_unit_price').on('keyup', function () {
-				var q = parseFloat($('#add_quantity').val()) || 0;
-				var u = parseFloat($('#add_unit_price').val().replace(/[^0-9.]/g,'')) || 0;
-				$('#add_total_price').val('RM ' + (q * u).toFixed(2));
+				var quantity = parseFloat($('#add_quantity').val()) || 0;
+				var unit = parseFloat($('#add_unit_price').val().replace(/[^0-9.]/g, '')) || 0;
+				$('#add_total_price').val('RM ' + (quantity * unit).toFixed(2));
 			});
-			
-			var buttonShow = document.getElementsByTagName('button');
-			for(var i=0; i<buttonShow.length; i++){
-				if(buttonShow[i].innerHTML == '<span>ADD NEW ITEM</span>'){
-					 buttonShow[i].classList.add("add_button");
-					 buttonShow[i].hidden = true;
-				} else if (buttonShow[i].innerHTML == '<span>SAVE DATA</span>'){
-					 buttonShow[i].classList.add("data_button");
-					 buttonShow[i].hidden = true;
-				} else if (buttonShow[i].innerHTML == '<span>LOAD DATA</span>'){
-					 buttonShow[i].classList.add("data_button");
-					 buttonShow[i].setAttribute("onclick", "document.getElementById('upload_data').click();");
-				} else if (buttonShow[i].innerHTML == '<span>NEW DATA</span>'){
-					 buttonShow[i].classList.add("add_button");
-				}
-			}
-			
-			function readSingleFile(e) {
-			  var file = e.target.files[0];
-			  if (!file) {
-				return;
-			  }
-			  var reader = new FileReader();
-			  reader.onload = function(e) {
-				var contents = e.target.result;
-				displayContents(contents);
-			  };
-			  reader.readAsText(file);
-			}
 
-			function displayContents(contents) {
-			  dataSrc = JSON.parse(contents.split('"body":')[1].split('}')[0]);
-			  $('#myTable').dataTable().fnClearTable();
-			  $('#myTable').dataTable().fnAddData(dataSrc);
-			  for(var i=0; i<buttonShow.length; i++){
-				if(buttonShow[i].innerHTML == '<span>ADD NEW ITEM</span>'){
-					 buttonShow[i].hidden = false;
-				} else if (buttonShow[i].innerHTML == '<span>SAVE DATA</span>'){
-					 buttonShow[i].hidden = false;
-				} else if (buttonShow[i].innerHTML == '<span>LOAD DATA</span>'){
-					 buttonShow[i].hidden = true;
-				} else if (buttonShow[i].innerHTML == '<span>NEW DATA</span>'){
-					 buttonShow[i].hidden = true;
-				}
-			  }
-			  $('#empty_animation').attr("hidden",true);
-			  document.getElementById('upload_data').value = "";
-			}
-
-			document.getElementById('upload_data')
-			  .addEventListener('change', readSingleFile, false);
-			  
-			function getSubstring(string, char1, char2) {
-			  return string.slice(
-				string.indexOf(char1) + 1,
-				string.lastIndexOf(char2),
-			  );
-			}
-			
-			$('.menu_button').hover(function(){
-				$(this).find(".square_bg").addClass("menu_select_hover");
-			  }, function(){
-				$(this).find(".square_bg").removeClass("menu_select_hover");
-			});
-			
-		} );
+		});
 	</script>
 </head>
 

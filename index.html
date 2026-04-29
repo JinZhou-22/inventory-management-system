@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <meta charset="utf-8">
@@ -20,12 +20,12 @@
 	<link rel="stylesheet" href="assets/bootstrap/css/inventory.css">
 	<script src="assets/js/jquery.min.js"></script>
 	<script src="assets/js/datatables.min.js"></script>
-	<script type="text/javascript">
-		$(document).ready( function () {
+	<script>
+		function initializeDataTable() {
 			var dataSrc = "";
-		
-			var datatable = $('#myTable').DataTable( {
-				data : dataSrc,
+
+			var datatable = $('#myTable').DataTable({
+				data: dataSrc,
 				columns: [
 					null,
 					null,
@@ -45,76 +45,94 @@
 						orderable: false
 					}
 				],
-				"scrollY": "65vh",
-				"scrollCollapse": true,
-				"paging": false,
-				"info": false,
-				"buttons": true,
-				language: { 
+				scrollY: "65vh",
+				scrollCollapse: true,
+				paging: false,
+				info: false,
+				buttons: true,
+				language: {
 					search: "",
-					searchPlaceholder: '🔍︎    Search inventory',
-					"emptyTable":     "Please select 'LOAD DATA' to load an existing database file or 'NEW DATA' to create a new one."
+					searchPlaceholder: window.t ? window.t('searchPlaceholder') : 'Search inventory',
+					emptyTable: window.t ? window.t('emptyTable') : "Please select 'LOAD DATA' or 'NEW DATA'."
 				},
-				"dom": '<"pull-left"f><"pull-right"B>tip',
+				dom: '<"pull-left"f><"pull-right"B>tip',
 				buttons: [
 					{
-						text: 'ADD NEW ITEM',
-						action: function ( e, dt, node, config ) {
+						text: window.t ? window.t('addNewItemButton') : 'ADD NEW ITEM',
+						action: function () {
 							$('#addModal').modal('toggle');
 						}
 					},
 					{
-						text: 'SAVE DATA',
-						action: function ( e, dt, button, config ) {
+						text: window.t ? window.t('saveDataButton') : 'SAVE DATA',
+						action: function (e, dt) {
 							var data = dt.buttons.exportData();
-		 
 							$.fn.dataTable.fileSave(
-								new Blob( [ JSON.stringify( data ) ] ),
+								new Blob([JSON.stringify(data)]),
 								'DB.txt'
 							);
 						}
 					},
 					{
-						text: 'NEW DATA',
-						action: function ( e, dt, node, config ) {
+						text: window.t ? window.t('newDataButton') : 'NEW DATA',
+						action: function () {
 							$('#addModal').modal('toggle');
 						}
 					},
 					{
-						text: 'LOAD DATA'
-					}
-				]
-			} );
-			
-			var a = null;
-			var b = null;
-			
-			function delete_Row(a){
-				datatable.row( $(a).parents('tr') ).remove().draw();
-				if (datatable.rows().count() == 0){
-					for(var i=0; i<buttonShow.length; i++){
-						if(buttonShow[i].innerHTML == '<span>ADD NEW ITEM</span>'){
-							 buttonShow[i].hidden = true;
-						} else if (buttonShow[i].innerHTML == '<span>SAVE DATA</span>'){
-							 buttonShow[i].hidden = true;
-						} else if (buttonShow[i].innerHTML == '<span>LOAD DATA</span>'){
-							 buttonShow[i].hidden = false;
-						} else if (buttonShow[i].innerHTML == '<span>NEW DATA</span>'){
-							 buttonShow[i].hidden = false;
+						text: window.t ? window.t('loadDataButton') : 'LOAD DATA',
+						action: function () {
+							document.getElementById('upload_data').click();
 						}
 					}
-					$('#empty_animation').attr("hidden",false);
+				]
+			});
+
+			var a = null;
+			var b = null;
+			var buttonNodes = datatable.buttons().nodes().toArray();
+			var addNewItemBtn = buttonNodes[0];
+			var saveDataBtn = buttonNodes[1];
+			var newDataBtn = buttonNodes[2];
+			var loadDataBtn = buttonNodes[3];
+
+			$(addNewItemBtn).addClass('add_button').prop('hidden', true);
+			$(saveDataBtn).addClass('data_button').prop('hidden', true);
+			$(newDataBtn).addClass('add_button').prop('hidden', false);
+			$(loadDataBtn).addClass('data_button').prop('hidden', false);
+
+			function showEmptyState() {
+				$(addNewItemBtn).prop('hidden', true);
+				$(saveDataBtn).prop('hidden', true);
+				$(loadDataBtn).prop('hidden', false);
+				$(newDataBtn).prop('hidden', false);
+				$('#empty_animation').attr('hidden', false);
+			}
+
+			function showDataState() {
+				$(addNewItemBtn).prop('hidden', false);
+				$(saveDataBtn).prop('hidden', false);
+				$(loadDataBtn).prop('hidden', true);
+				$(newDataBtn).prop('hidden', true);
+				$('#empty_animation').attr('hidden', true);
+			}
+
+			function delete_Row(a) {
+				datatable.row($(a).parents('tr')).remove().draw();
+				if (datatable.rows().count() === 0) {
+					showEmptyState();
 				}
-			};
-			
+			}
+
 			$('#myTable').on('click', 'td.editor-delete', function () {
 				a = this;
 				$('#deleteModal').modal('toggle');
-				$('#deleteModal').on('click', '#delete_button', function () {
-					delete_Row(a);
-				} );
-			} );
-			
+			});
+
+			$('#delete_button').off('click.inventory').on('click.inventory', function () {
+				if (a) delete_Row(a);
+			});
+
 			$('#myTable').on('click', 'td.editor-edit', function () {
 				b = this;
 				$('#edit_data').find('input[id="itemname"]').val(datatable.row(b).data()[0]);
@@ -123,158 +141,101 @@
 				$('#edit_data').find('input[id="unit_price"]').val(datatable.row(b).data()[3]);
 				$('#edit_data').find('input[id="total_price"]').val(datatable.row(b).data()[4]);
 				$('#editModal').modal('toggle');
-			} );
-			
-			$('#edit_data').on('submit', function () {
+			});
+
+			$('#edit_data').off('submit.inventory').on('submit.inventory', function (event) {
 				event.preventDefault();
-				var final_quantity = parseFloat($('#edit_data').find('input[id="quantity"]').val().replace(/[^0-9.]/g,''));
+				var final_quantity = parseFloat($('#edit_data').find('input[id="quantity"]').val().replace(/[^0-9.]/g, '')) || 0;
 				$('#edit_data').find('input[id="quantity"]').val(final_quantity.toFixed(0));
-				var final_unit = parseFloat($('#edit_data').find('input[id="unit_price"]').val().replace(/[^0-9.]/g,''));
-				$('#edit_data').find('input[id="unit_price"]').val('RM '+final_unit.toFixed(2));
-				var newData = [$('#edit_data').find('input[id="itemname"]').val(),$('#edit_data').find('input[id="quantity"]').val(),$('#edit_data').find('input[id="type"]').val(),$('#edit_data').find('input[id="unit_price"]').val(),$('#edit_data').find('input[id="total_price"]').val()];
+				var final_unit = parseFloat($('#edit_data').find('input[id="unit_price"]').val().replace(/[^0-9.]/g, '')) || 0;
+				$('#edit_data').find('input[id="unit_price"]').val('RM ' + final_unit.toFixed(2));
+				var newData = [
+					$('#edit_data').find('input[id="itemname"]').val(),
+					$('#edit_data').find('input[id="quantity"]').val(),
+					$('#edit_data').find('input[id="type"]').val(),
+					$('#edit_data').find('input[id="unit_price"]').val(),
+					$('#edit_data').find('input[id="total_price"]').val()
+				];
 				datatable.row(b).data(newData).draw();
 				$('#editModal').modal('toggle');
 				$('#updateConfirmationModal').modal('toggle');
-			} );
+			});
 
-			$('#add_data').on('submit', function () {
+			$('#add_data').off('submit.inventory').on('submit.inventory', function (event) {
 				event.preventDefault();
-				var final_quantity = parseFloat($('#add_data').find('input[id="quantity"]').val().replace(/[^0-9.]/g,''));
+				var final_quantity = parseFloat($('#add_data').find('input[id="quantity"]').val().replace(/[^0-9.]/g, '')) || 0;
 				$('#add_data').find('input[id="quantity"]').val(final_quantity.toFixed(0));
-				var final_unit = parseFloat($('#add_data').find('input[id="unit_price"]').val().replace(/[^0-9.]/g,''));
-				$('#add_data').find('input[id="unit_price"]').val('RM '+final_unit.toFixed(2));
-				var newData = [$('#add_data').find('input[id="itemname"]').val(),$('#add_data').find('input[id="quantity"]').val(),$('#add_data').find('input[id="type"]').val(),$('#add_data').find('input[id="unit_price"]').val(),$('#add_data').find('input[id="total_price"]').val()];
+				var final_unit = parseFloat($('#add_data').find('input[id="unit_price"]').val().replace(/[^0-9.]/g, '')) || 0;
+				$('#add_data').find('input[id="unit_price"]').val('RM ' + final_unit.toFixed(2));
+				var newData = [
+					$('#add_data').find('input[id="itemname"]').val(),
+					$('#add_data').find('input[id="quantity"]').val(),
+					$('#add_data').find('input[id="type"]').val(),
+					$('#add_data').find('input[id="unit_price"]').val(),
+					$('#add_data').find('input[id="total_price"]').val()
+				];
 				datatable.row.add(newData).draw();
 				$('#addModal').modal('toggle');
 				$('#addConfirmationModal').modal('toggle');
-				for(var i=0; i<buttonShow.length; i++){
-					if(buttonShow[i].innerHTML == '<span>ADD NEW ITEM</span>'){
-						 buttonShow[i].hidden = false;
-					} else if (buttonShow[i].innerHTML == '<span>SAVE DATA</span>'){
-						 buttonShow[i].hidden = false;
-					} else if (buttonShow[i].innerHTML == '<span>LOAD DATA</span>'){
-						 buttonShow[i].hidden = true;
-					} else if (buttonShow[i].innerHTML == '<span>NEW DATA</span>'){
-						 buttonShow[i].hidden = true;
-					}
-				}
-				$('#empty_animation').attr("hidden",true);
+				showDataState();
 				$('#add_data').find('input[id="itemname"]').val('');
 				$('#add_data').find('input[id="quantity"]').val('');
 				$('#add_data').find('input[id="type"]').val('');
-				$('#add_data').find('input[id="unit_price"]').val('');
-				$('#add_data').find('input[id="total_price"]').val('');
-			} );
-			
-			$('#edit_data').find('input[id="quantity"]').bind('keyup', function(){
-				var quantity_no = $(this).val().replace(/[^0-9.]/g,'');
+				$('#add_data').find('input[id="unit_price"]').val('RM ');
+				$('#add_data').find('input[id="total_price"]').val('RM ');
+			});
+
+			$('#edit_data, #add_data').find('input[id="quantity"]').off('keyup.inventory').on('keyup.inventory', function () {
+				var form = $(this).closest('form');
+				var quantity_no = $(this).val().replace(/[^0-9.]/g, '');
 				$(this).val(quantity_no);
-				if(quantity_no.replace(/[^0-9.]/g,'') != ''){
-					var unit = $('#edit_data').find('input[id="unit_price"]').val().replace(/[^0-9.]/g,'');					
+				if (quantity_no.replace(/[^0-9.]/g, '') !== '') {
+					var unit = form.find('input[id="unit_price"]').val().replace(/[^0-9.]/g, '');
 					var total = unit * quantity_no;
-					$('#edit_data').find('input[id="total_price"]').val('RM '+total.toFixed(2));
+					form.find('input[id="total_price"]').val('RM ' + total.toFixed(2));
 				}
 			});
-			
-			$('#edit_data').find('input[id="unit_price"]').bind('keyup', function(){
-				var sanitized = $(this).val().replace(/[^0-9.]/g,'');
-				$(this).val('RM '+sanitized);
-				var quantity_no = $('#edit_data').find('input[id="quantity"]').val();
-				if(quantity_no.replace(/[^0-9.]/g,'') == ''){
-					$('#edit_data').find('input[id="quantity"]').val(0);
+
+			$('#edit_data, #add_data').find('input[id="unit_price"]').off('keyup.inventory').on('keyup.inventory', function () {
+				var form = $(this).closest('form');
+				var sanitized = $(this).val().replace(/[^0-9.]/g, '');
+				$(this).val('RM ' + sanitized);
+				var quantity_no = form.find('input[id="quantity"]').val();
+				if (quantity_no.replace(/[^0-9.]/g, '') === '') {
+					form.find('input[id="quantity"]').val(0);
 					quantity_no = 0;
 				}
 				var total = sanitized * quantity_no;
-				$('#edit_data').find('input[id="total_price"]').val('RM '+total.toFixed(2));
+				form.find('input[id="total_price"]').val('RM ' + total.toFixed(2));
 			});
-			
-			$('#add_data').find('input[id="quantity"]').bind('keyup', function(){
-				var quantity_no = $(this).val().replace(/[^0-9.]/g,'');
-				$(this).val(quantity_no);
-				if(quantity_no.replace(/[^0-9.]/g,'') != ''){
-					var unit = $('#add_data').find('input[id="unit_price"]').val().replace(/[^0-9.]/g,'');					
-					var total = unit * quantity_no;
-					$('#add_data').find('input[id="total_price"]').val('RM '+total.toFixed(2));
-				}
-			});
-			
-			$('#add_data').find('input[id="unit_price"]').bind('keyup', function(){
-				var sanitized = $(this).val().replace(/[^0-9.]/g,'');
-				$(this).val('RM '+sanitized);
-				var quantity_no = $('#add_data').find('input[id="quantity"]').val();
-				if(quantity_no.replace(/[^0-9.]/g,'') == ''){
-					$('#add_data').find('input[id="quantity"]').val(0);
-					quantity_no = 0;
-				}
-				var total = sanitized * quantity_no;
-				$('#add_data').find('input[id="total_price"]').val('RM '+total.toFixed(2));
-			});
-			
-			var buttonShow = document.getElementsByTagName('button');
-			for(var i=0; i<buttonShow.length; i++){
-				if(buttonShow[i].innerHTML == '<span>ADD NEW ITEM</span>'){
-					 buttonShow[i].classList.add("add_button");
-					 buttonShow[i].hidden = true;
-				} else if (buttonShow[i].innerHTML == '<span>SAVE DATA</span>'){
-					 buttonShow[i].classList.add("data_button");
-					 buttonShow[i].hidden = true;
-				} else if (buttonShow[i].innerHTML == '<span>LOAD DATA</span>'){
-					 buttonShow[i].classList.add("data_button");
-					 buttonShow[i].setAttribute("onclick", "document.getElementById('upload_data').click();");
-				} else if (buttonShow[i].innerHTML == '<span>NEW DATA</span>'){
-					 buttonShow[i].classList.add("add_button");
-				}
-			}
-			
+
 			function readSingleFile(e) {
-			  var file = e.target.files[0];
-			  if (!file) {
-				return;
-			  }
-			  var reader = new FileReader();
-			  reader.onload = function(e) {
-				var contents = e.target.result;
-				displayContents(contents);
-			  };
-			  reader.readAsText(file);
+				var file = e.target.files[0];
+				if (!file) return;
+				var reader = new FileReader();
+				reader.onload = function (e) {
+					displayContents(e.target.result);
+				};
+				reader.readAsText(file);
 			}
 
 			function displayContents(contents) {
-			  dataSrc = JSON.parse(contents.split('"body":')[1].split('}')[0]);
-			  $('#myTable').dataTable().fnClearTable();
-			  $('#myTable').dataTable().fnAddData(dataSrc);
-			  for(var i=0; i<buttonShow.length; i++){
-				if(buttonShow[i].innerHTML == '<span>ADD NEW ITEM</span>'){
-					 buttonShow[i].hidden = false;
-				} else if (buttonShow[i].innerHTML == '<span>SAVE DATA</span>'){
-					 buttonShow[i].hidden = false;
-				} else if (buttonShow[i].innerHTML == '<span>LOAD DATA</span>'){
-					 buttonShow[i].hidden = true;
-				} else if (buttonShow[i].innerHTML == '<span>NEW DATA</span>'){
-					 buttonShow[i].hidden = true;
-				}
-			  }
-			  $('#empty_animation').attr("hidden",true);
-			  document.getElementById('upload_data').value = "";
+				dataSrc = JSON.parse(contents.split('"body":')[1].split('}')[0]);
+				$('#myTable').dataTable().fnClearTable();
+				$('#myTable').dataTable().fnAddData(dataSrc);
+				showDataState();
+				document.getElementById('upload_data').value = "";
 			}
 
-			document.getElementById('upload_data')
-			  .addEventListener('change', readSingleFile, false);
-			  
-			function getSubstring(string, char1, char2) {
-			  return string.slice(
-				string.indexOf(char1) + 1,
-				string.lastIndexOf(char2),
-			  );
-			}
-			
-			$('.menu_button').hover(function(){
-				$(this).find(".square_bg").addClass("menu_select_hover");
-			  }, function(){
-				$(this).find(".square_bg").removeClass("menu_select_hover");
+			document.getElementById('upload_data').removeEventListener('change', readSingleFile, false);
+			document.getElementById('upload_data').addEventListener('change', readSingleFile, false);
+
+			$('.menu_button').hover(function () {
+				$(this).find('.square_bg').addClass('menu_select_hover');
+			}, function () {
+				$(this).find('.square_bg').removeClass('menu_select_hover');
 			});
-			
-		} );
+		}
 	</script>
 </head>
 
@@ -289,14 +250,14 @@
 					  <div class="modal-dialog modal-dialog-centered">
 						<div class="modal-content">
 						  <div class="modal-header">
-							<h5 class="modal-title" id="exampleModalLabel" style="font-size: calc(0.8vw + 0.8vh); color:rgb(0,0,0); font-family: Nunito; padding-top: 3px; padding-bottom: 3px; padding-left: 8px; font-weight: bold;">Delete Confirmation</h5>
+							<h5 class="modal-title" id="exampleModalLabel" style="font-size: calc(0.8vw + 0.8vh); color:rgb(0,0,0); font-family: Nunito; padding-top: 3px; padding-bottom: 3px; padding-left: 8px; font-weight: bold;" data-i18n="deleteConfirmation">Delete Confirmation</h5>
 							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="padding-top: 3px; padding-bottom: 3px; padding-right: 20px;"></button>
 						  </div>
-						  <div class="modal-body" style="font-size: calc(0.7vw + 0.7vh); color:rgb(0,0,0); font-family: Nunito; padding-left: 24px;">
+						  <div class="modal-body" style="font-size: calc(0.7vw + 0.7vh); color:rgb(0,0,0); font-family: Nunito; padding-left: 24px;" data-i18n="deleteMessage">
 							Are you sure you wish to remove this record?
 						  </div>
 						  <div class="modal-footer">
-							<button type="button" class="modal_button" data-bs-dismiss="modal" id="delete_button">Delete</button>
+							<button type="button" class="modal_button" data-bs-dismiss="modal" id="delete_button" data-i18n="deleteButton">Delete</button>
 						  </div>
 						</div>
 					  </div>
@@ -307,14 +268,14 @@
 					  <div class="modal-dialog modal-dialog-centered">
 						<div class="modal-content">
 						  <div class="modal-header">
-							<h5 class="modal-title" id="exampleModalLabel" style="font-size: calc(0.8vw + 0.8vh); color:rgb(0,0,0); font-family: Nunito; padding-top: 3px; padding-bottom: 3px; padding-left: 8px; font-weight: bold;">Update Confirmation</h5>
+							<h5 class="modal-title" id="exampleModalLabel" style="font-size: calc(0.8vw + 0.8vh); color:rgb(0,0,0); font-family: Nunito; padding-top: 3px; padding-bottom: 3px; padding-left: 8px; font-weight: bold;" data-i18n="updateConfirmation">Update Confirmation</h5>
 							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="padding-top: 3px; padding-bottom: 3px; padding-right: 20px;"></button>
 						  </div>
-						  <div class="modal-body" style="font-size: calc(0.7vw + 0.7vh); color:rgb(0,0,0); font-family: Nunito; padding-left: 24px;">
+						  <div class="modal-body" style="font-size: calc(0.7vw + 0.7vh); color:rgb(0,0,0); font-family: Nunito; padding-left: 24px;" data-i18n="updateMessage">
 							Inventory has been successfully updated.
 						  </div>
 						  <div class="modal-footer">
-							<button type="button" class="modal_button" data-bs-dismiss="modal">OK</button>
+							<button type="button" class="modal_button" data-bs-dismiss="modal" data-i18n="okButton">OK</button>
 						  </div>
 						</div>
 					  </div>
@@ -325,14 +286,14 @@
 					  <div class="modal-dialog modal-dialog-centered">
 						<div class="modal-content">
 						  <div class="modal-header">
-							<h5 class="modal-title" id="exampleModalLabel" style="font-size: calc(0.8vw + 0.8vh); color:rgb(0,0,0); font-family: Nunito; padding-top: 3px; padding-bottom: 3px; padding-left: 8px; font-weight: bold;">Add Confirmation</h5>
+							<h5 class="modal-title" id="exampleModalLabel" style="font-size: calc(0.8vw + 0.8vh); color:rgb(0,0,0); font-family: Nunito; padding-top: 3px; padding-bottom: 3px; padding-left: 8px; font-weight: bold;" data-i18n="addConfirmation">Add Confirmation</h5>
 							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="padding-top: 3px; padding-bottom: 3px; padding-right: 20px;"></button>
 						  </div>
-						  <div class="modal-body" style="font-size: calc(0.7vw + 0.7vh); color:rgb(0,0,0); font-family: Nunito; padding-left: 24px;">
+						  <div class="modal-body" style="font-size: calc(0.7vw + 0.7vh); color:rgb(0,0,0); font-family: Nunito; padding-left: 24px;" data-i18n="addMessage">
 							A new item has been successfully added.
 						  </div>
 						  <div class="modal-footer">
-							<button type="button" class="modal_button" data-bs-dismiss="modal">OK</button>
+							<button type="button" class="modal_button" data-bs-dismiss="modal" data-i18n="okButton">OK</button>
 						  </div>
 						</div>
 					  </div>
@@ -343,35 +304,35 @@
 					  <div class="modal-dialog modal-dialog-centered modal-lg">
 						<div class="modal-content">
 						  <div class="modal-header">
-							<h5 class="modal-title" id="exampleModalLabel" style="font-size: calc(0.8vw + 0.8vh); color:rgb(0,0,0); font-family: Nunito; padding-top: 3px; padding-bottom: 3px; padding-left: 8px; font-weight: bold;">Edit Data</h5>
+							<h5 class="modal-title" id="exampleModalLabel" style="font-size: calc(0.8vw + 0.8vh); color:rgb(0,0,0); font-family: Nunito; padding-top: 3px; padding-bottom: 3px; padding-left: 8px; font-weight: bold;" data-i18n="editData">Edit Data</h5>
 							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="padding-top: 3px; padding-bottom: 3px; padding-right: 20px;"></button>
 						  </div>
 						  <div class="modal-body" style="font-size: calc(0.6vw + 0.6vh); color:rgb(0,0,0); font-family: Nunito; padding-left: 24px;">
 							<form id="edit_data" class="needs-validation">
 								<div class="form-group mb-3">
-									<label for="itemname" class="mb-1">Item Name</label>
+									<label for="itemname" class="mb-1" data-i18n="itemName">Item Name</label>
 									<input type="text" class="form-control" id="itemname" placeholder="Please enter a value." required style="font-size: calc(0.65vw + 0.65vh); color:rgb(0,0,0); font-family: Nunito;">
 								</div>
 								<div class="form-group mb-3">
-									<label for="quantity" class="mb-1">Quantity</label>
+									<label for="quantity" class="mb-1" data-i18n="quantity">Quantity</label>
 									<input type="text" class="form-control" id="quantity" placeholder="Please enter a value." required style="font-size: calc(0.65vw + 0.65vh); color:rgb(0,0,0); font-family: Nunito;">
 								</div>
 								<div class="form-group mb-3">
-									<label for="type" class="mb-1">Type</label>
+									<label for="type" class="mb-1" data-i18n="type">Type</label>
 									<input type="text" class="form-control" id="type" placeholder="Please enter a value." required style="font-size: calc(0.65vw + 0.65vh); color:rgb(0,0,0); font-family: Nunito;">
 								</div>
 								<div class="form-group mb-3">
-									<label for="unit_price" class="mb-1">Unit Price</label>
+									<label for="unit_price" class="mb-1" data-i18n="unitPrice">Unit Price</label>
 									<input type="text" class="form-control" id="unit_price" placeholder="Please enter a value." required style="font-size: calc(0.65vw + 0.65vh); color:rgb(0,0,0); font-family: Nunito;">
 								</div>
 								<div class="form-group">
-									<label for="total_price" class="mb-1">Total Price</label>
+									<label for="total_price" class="mb-1" data-i18n="totalPrice">Total Price</label>
 									<input type="text" class="form-control" id="total_price" disabled placeholder="Please enter a value." required style="font-size: calc(0.65vw + 0.65vh); color:rgb(0,0,0); font-family: Nunito;">
 								</div>
 							</form>
 						  </div>
 						  <div class="modal-footer">
-							<button class="modal_button" id="update_button" type="submit" form="edit_data">Update</button>
+							<button class="modal_button" id="update_button" type="submit" form="edit_data" data-i18n="update">Update</button>
 						  </div>
 						</div>
 					  </div>
@@ -382,35 +343,35 @@
 					  <div class="modal-dialog modal-dialog-centered modal-lg">
 						<div class="modal-content">
 						  <div class="modal-header">
-							<h5 class="modal-title" id="exampleModalLabel" style="font-size: calc(0.8vw + 0.8vh); color:rgb(0,0,0); font-family: Nunito; padding-top: 3px; padding-bottom: 3px; padding-left: 8px; font-weight: bold;">Add New Item</h5>
+							<h5 class="modal-title" id="exampleModalLabel" style="font-size: calc(0.8vw + 0.8vh); color:rgb(0,0,0); font-family: Nunito; padding-top: 3px; padding-bottom: 3px; padding-left: 8px; font-weight: bold;" data-i18n="addNewItem">Add New Item</h5>
 							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="padding-top: 3px; padding-bottom: 3px; padding-right: 20px;"></button>
 						  </div>
 						  <div class="modal-body" style="font-size: calc(0.6vw + 0.6vh); color:rgb(0,0,0); font-family: Nunito; padding-left: 24px;">
 							<form id="add_data" class="needs-validation">
 								<div class="form-group mb-3">
-									<label for="itemname" class="mb-1">Item Name</label>
+									<label for="itemname" class="mb-1" data-i18n="itemName">Item Name</label>
 									<input type="text" class="form-control" id="itemname" placeholder="Please enter a value." required style="font-size: calc(0.65vw + 0.65vh); color:rgb(0,0,0); font-family: Nunito;">
 								</div>
 								<div class="form-group mb-3">
-									<label for="quantity" class="mb-1">Quantity</label>
+									<label for="quantity" class="mb-1" data-i18n="quantity">Quantity</label>
 									<input type="text" class="form-control" id="quantity" placeholder="Please enter a value." required style="font-size: calc(0.65vw + 0.65vh); color:rgb(0,0,0); font-family: Nunito;">
 								</div>
 								<div class="form-group mb-3">
-									<label for="type" class="mb-1">Type</label>
+									<label for="type" class="mb-1" data-i18n="type">Type</label>
 									<input type="text" class="form-control" id="type" placeholder="Please enter a value." required style="font-size: calc(0.65vw + 0.65vh); color:rgb(0,0,0); font-family: Nunito;">
 								</div>
 								<div class="form-group mb-3">
-									<label for="unit_price" class="mb-1">Unit Price</label>
+									<label for="unit_price" class="mb-1" data-i18n="unitPrice">Unit Price</label>
 									<input type="text" class="form-control" id="unit_price" value="RM " placeholder="Please enter a value." required style="font-size: calc(0.65vw + 0.65vh); color:rgb(0,0,0); font-family: Nunito;">
 								</div>
 								<div class="form-group">
-									<label for="total_price" class="mb-1">Total Price</label>
+									<label for="total_price" class="mb-1" data-i18n="totalPrice">Total Price</label>
 									<input type="text" class="form-control" id="total_price" value="RM " disabled placeholder="Please enter a value." required style="font-size: calc(0.65vw + 0.65vh); color:rgb(0,0,0); font-family: Nunito;">
 								</div>
 							</form>
 						  </div>
 						  <div class="modal-footer">
-							<button class="modal_button" id="add_button" type="submit" form="add_data">Add</button>
+							<button class="modal_button" id="add_button" type="submit" form="add_data" data-i18n="add">Add</button>
 						  </div>
 						</div>
 					  </div>
@@ -425,25 +386,25 @@
 								</span>
 							</div>
 							<div class="row" style="margin-top: 10px">
-								<span class="fa-stack fa-2x menu_button" style="margin: auto; cursor: pointer;" onclick="alert('Hi there! I added these buttons just for design because it looked kinda empty :3');">
+								<span class="fa-stack fa-2x menu_button" style="margin: auto; cursor: pointer;" onclick="alert(window.i18next ? window.i18next.t('alertMessage') : 'Hi there! I added these buttons just for design because it looked kinda empty :3');">
 								  <i class="fas fa-square fa-stack-1x square_bg" style="color:rgba(0,0,0,0); font-size: calc(2.3vw + 2.3vh); transition: 0.3s;"></i>
 								  <i class="far fa-chart-bar fa-stack-1x" style="color: rgba(255,255,255,1); font-size: calc(1vw + 1vh);"></i>
 								</span>
 							</div>
 							<div class="row" style="margin-top: 10px">
-								<span class="fa-stack fa-2x menu_button" style="margin: auto; cursor: pointer;" onclick="alert('Hi there! I added these buttons just for design because it looked kinda empty :3');">
+								<span class="fa-stack fa-2x menu_button" style="margin: auto; cursor: pointer;" onclick="alert(window.i18next ? window.i18next.t('alertMessage') : 'Hi there! I added these buttons just for design because it looked kinda empty :3');">
 								  <i class="fas fa-square fa-stack-1x square_bg" style="color:rgba(0,0,0,0); font-size: calc(2.3vw + 2.3vh); transition: 0.3s;"></i>
 								  <i class="far fa-calendar-alt fa-stack-1x" style="color: rgba(255,255,255,1); font-size: calc(1vw + 1vh);"></i>
 								</span>
 							</div>
 							<div class="row" style="margin-top: 10px">
-								<span class="fa-stack fa-2x menu_button" style="margin: auto; cursor: pointer;" onclick="alert('Hi there! I added these buttons just for design because it looked kinda empty :3');">
+								<span class="fa-stack fa-2x menu_button" style="margin: auto; cursor: pointer;" onclick="alert(window.i18next ? window.i18next.t('alertMessage') : 'Hi there! I added these buttons just for design because it looked kinda empty :3');">
 								  <i class="fas fa-square fa-stack-1x square_bg" style="color:rgba(0,0,0,0); font-size: calc(2.3vw + 2.3vh); transition: 0.3s;"></i>
 								  <i class="far fa-comment-dots fa-stack-1x" style="color: rgba(255,255,255,1); font-size: calc(1vw + 1vh);"></i>
 								</span>
 							</div>
 							<div class="row" style="margin-top: 10px">
-								<span class="fa-stack fa-2x menu_button" style="margin: auto; cursor: pointer;" onclick="alert('Hi there! I added these buttons just for design because it looked kinda empty :3');">
+								<span class="fa-stack fa-2x menu_button" style="margin: auto; cursor: pointer;" onclick="alert(window.i18next ? window.i18next.t('alertMessage') : 'Hi there! I added these buttons just for design because it looked kinda empty :3');">
 								  <i class="fas fa-square fa-stack-1x square_bg" style="color:rgba(0,0,0,0); font-size: calc(2.3vw + 2.3vh); transition: 0.3s;"></i>
 								  <i class="far fa-folder-open fa-stack-1x" style="color: rgba(255,255,255,1); font-size: calc(1vw + 1vh);"></i>
 								</span>
@@ -454,10 +415,12 @@
 								<div class="card p-0" style="background-color: white; border-radius: 15px 0px 0px 15px; border: none; box-shadow: 0 0px 6px 2px rgba(0,0,0,0.2); height:100vh;">
 									<div class="row">
 										<div class="col" style="margin-left: 2.6vw; margin-top: 25px; margin-bottom: 20px;">
-											<div class="fw-bold text-xs"><span id="title" style="font-size: calc(0.8vw + 0.8vh); color:rgb(0,0,0); font-family: Nunito;">Manage Inventory</span></div>
+											<div class="fw-bold text-xs"><span id="title" style="font-size: calc(0.8vw + 0.8vh); color:rgb(0,0,0); font-family: Nunito;" data-i18n="manageInventory">Manage Inventory</span></div>
 										</div>
 										<div class="col" style="margin-right: 70px; margin-top: auto; margin-bottom: auto; text-align: right;">
-											<img src="assets/images/uniqlo_logo.png" alt="UNIQLO Logo" style="height: 4.7vh;">
+											<button class="btn btn-sm btn-outline-secondary me-2" onclick="changeLanguage('en')">EN</button>
+											<button class="btn btn-sm btn-outline-secondary" onclick="changeLanguage('zh')">中文</button>
+											<img src="assets/images/uniqlo_logo.png" alt="UNIQLO Logo" style="height: 4.7vh; margin-left: 20px;">
 										</div>
 									</div>
 									<input type="file" name="data" id="upload_data" style="display: none;"/>
@@ -467,11 +430,11 @@
 											<table id="myTable" class="row-border hover" style="font-size: calc(0.6vw + 0.6vh); font-family: Nunito; color: black;">
 												<thead>
 													<tr>
-														<th>Item Name</th>
-														<th>Quantity</th>
-														<th>Type</th>
-														<th>Unit Price</th>
-														<th>Total Price</th>
+														<th data-i18n="itemName">Item Name</th>
+														<th data-i18n="quantity">Quantity</th>
+														<th data-i18n="type">Type</th>
+														<th data-i18n="unitPrice">Unit Price</th>
+														<th data-i18n="totalPrice">Total Price</th>
 														<th></th>
 														<th></th>
 													</tr>
@@ -494,6 +457,9 @@
     <script src="assets/js/chart.min.js"></script>
     <script src="assets/js/bs-init.js"></script>
     <script src="assets/js/theme.js"></script>
+    <script src="assets/js/i18n.js"></script>
 </body>
 
 </html>
+
+

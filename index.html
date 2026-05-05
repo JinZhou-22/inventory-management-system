@@ -413,8 +413,26 @@
                                             <div class="fw-bold text-xs"><h1 id="title" style="font-size: calc(0.8vw + 0.8vh); color:rgb(0,0,0); font-family: Nunito; margin: 0; font-weight: bold; line-height: 1;" data-i18n="manageInventory">Manage Inventory</h1></div>
                                         </div>
                                         <div class="col" style="margin-right: 70px; margin-top: auto; margin-bottom: auto; text-align: right;">
-                                            <button class="btn btn-sm btn-outline-secondary me-2" onclick="changeLanguage('en')">EN</button>
-                                            <button class="btn btn-sm btn-outline-secondary" onclick="changeLanguage('zh')">中文</button>
+                                            <button
+                                                    id="languageToggleBtn"
+                                                    class="language-toggle-btn"
+                                                    type="button"
+                                                    onclick="toggleLanguage()"
+                                                    aria-label="Switch language"
+                                                    style="
+                                                        color: #000000;
+                                                        background-color: #ffffff;
+                                                        border: 2px solid #000000;
+                                                        border-radius: 8px;
+                                                        padding: 6px 14px;
+                                                        font-weight: 700;
+                                                        font-size: 14px;
+                                                        font-family: Nunito;
+                                                        cursor: pointer;
+                                                    "
+                                            >
+                                                中文
+                                            </button>
                                             <img src="assets/images/uniqlo_logo.png" alt="UNIQLO Logo" style="height: 4.7vh; margin-left: 20px;">
                                         </div>
                                     </div>

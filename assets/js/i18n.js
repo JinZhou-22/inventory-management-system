@@ -122,15 +122,32 @@
 
     window.changeLanguage = function (lng) {
         if (!resources[lng]) lng = 'en';
+
         currentLang = lng;
         localStorage.setItem('i18nextLng', lng);
-        document.documentElement.lang = lng;
+
+        document.documentElement.lang = lng === 'zh' ? 'zh-CN' : 'en';
+
         window.t = translate;
         refreshContent(document);
+        updateLanguageToggleButton();
     };
+    function updateLanguageToggleButton() {
+        var btn = document.getElementById('languageToggleBtn');
+        if (!btn) return;
+
+        if (currentLang === 'en') {
+            btn.textContent = '中文';
+            btn.setAttribute('aria-label', 'Switch language to Chinese');
+        } else {
+            btn.textContent = 'EN';
+            btn.setAttribute('aria-label', 'Switch language to English');
+        }
+    }
 
     function initPage() {
-        document.documentElement.lang = currentLang;
+        document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+
         refreshContent(document);
 
         if (typeof initializeDataTable === 'function' && $.fn.dataTable && !$.fn.dataTable.isDataTable('#myTable')) {
@@ -138,6 +155,7 @@
         }
 
         refreshContent(document);
+        updateLanguageToggleButton();
 
         $('.modal').off('show.bs.modal.i18n shown.bs.modal.i18n')
             .on('show.bs.modal.i18n shown.bs.modal.i18n', function () {
@@ -146,4 +164,9 @@
     }
 
     $(document).ready(initPage);
+
+    window.toggleLanguage = function () {
+        var nextLang = currentLang === 'en' ? 'zh' : 'en';
+        window.changeLanguage(nextLang);
+    };
 })();

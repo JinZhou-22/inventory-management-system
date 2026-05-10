@@ -1,0 +1,36 @@
+name: CI & Codecov
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-and-upload-coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. 设置 Node.js 环境 (这里默认使用 Node 20，您可以根据项目需求更改)
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 3. 安装项目依赖
+      - name: Install dependencies
+        run: npm install
+
+      # 4. 运行 Jest 测试并生成覆盖率报告 (对应截图 Step 1)
+      - name: Run tests and generate coverage report
+        run: npx jest --coverage
+
+      # 5. 将覆盖率报告上传至 Codecov (对应截图 Step 4)
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}

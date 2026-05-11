@@ -101,8 +101,16 @@
     <script>
         // 给按钮绑定的清理缓存方法
         function clearCookieConsent() {
+            // 清除“接受”状态
             localStorage.removeItem("cookiesAccepted");
+            
+            // 新增：同时清除“拒绝”状态
+            localStorage.removeItem("cookiesDeclined"); 
+            
             alert("Your cookie consent has been revoked. The banner will appear again on the main page.");
+            
+            // 可选：如果希望撤销后立即刷新当前页面以应用更改，可以取消下面这行的注释
+            // location.reload();
         }
     </script>
 </body>
